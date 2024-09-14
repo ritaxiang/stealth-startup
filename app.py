@@ -1,25 +1,66 @@
 import os
 import requests
-from dotenv import load_dotenv 
+from slack_sdk import WebClient
+from slack_sdk.errors import SlackApiError
+from dotenv import load_dotenv
 from agent import Agent
 
 load_dotenv()
 
-# Initialize the agent with a name, role, and Cohere API key
-cohere_api_key = os.getenv("COHERE_API_KEY")  # Load from env variable or set directly
+# Initialize the Slack WebClient with Bot User OAuth Token
+slack_token = os.getenv("IAN_K_SLACK_BOT_TOKEN")
+client = WebClient(token=slack_token)
+
+# Webhook URL for sending responses
 slack_webhook_url = os.getenv("IAN_K_SLACK_WEBHOOK")
+
+# Initialize the agent
+cohere_api_key = os.getenv("COHERE_API_KEY")
 ceo_agent = Agent(name="Alice", role="CEO", cohere_api_key=cohere_api_key)
 
-# CEO receives an instruction to brainstorm product ideas
-ceo_agent.take_instruction("brainstorm product ideas for an AI-powered calendar app")
+# Function to read messages from a specific Slack channel
+def read_slack_messages(channel_id, limit=10):
+    try:
+        print("trace1")
+        response = client.conversations_history(channel=channel_id, limit=limit)
+        print("trace2")
+        messages = response['messages']
+        print("trace3")
+        return messages
+    except SlackApiError as e:
+        print(f"Error retrieving messages: {e.response['error']}")
+        return []
 
-# Check memory for previous actions
-memory = ceo_agent.recall_memory()
-print("Memory:", memory)
+# Function to format and send a response to Slack using the webhook
+def send_message_to_slack(message, webhook_url):
+    headers = {'Content-Type': 'application/json'}
+    data = {"text": message}
+    response = requests.post(webhook_url, json=data, headers=headers)
+    if response.status_code == 200:
+        print("Message sent to Slack successfully.")
+    else:
+        print(f"Failed to send message to Slack: {response.status_code}, {response.text}")
 
-# Function to format the agent's memory for Slack
+# Process messages and respond based on the agent's logic
+def process_messages_and_respond(channel_id):
+    messages = read_slack_messages(channel_id)
+
+    for msg in messages:
+        user_message = msg['text']
+        print(f"Received message: {user_message}")
+
+        # Pass the message to the agent to generate a response
+        ceo_agent.take_instruction(user_message)
+
+        # Get agent's memory (the response)
+        memory = ceo_agent.recall_memory()
+        formatted_response = format_memory_for_slack(memory)
+
+        # Send the agent's response back to Slack using the webhook
+        send_message_to_slack(formatted_response, slack_webhook_url)
+
+# Helper function to format the agent's memory for Slack
 def format_memory_for_slack(memory):
-    # Convert the memory list into a formatted string for Slack
     messages = []
     for entry in memory:
         instruction = entry['instruction']
@@ -27,19 +68,8 @@ def format_memory_for_slack(memory):
         messages.append(f"Instruction: {instruction}\nAction: {action}\n")
     return "\n".join(messages)
 
-# Function to send the message to Slack via the Webhook
-def send_message_to_slack(message, webhook_url):
-    headers = {'Content-Type': 'application/json'}
-    data = {"text": message}
-    response = requests.post(webhook_url, json=data, headers=headers)
+if __name__ == "__main__":
+    channel_id = "C07N3SLH5EU" # social channel
     
-    if response.status_code == 200:
-        print("Message sent to Slack successfully.")
-    else:
-        print(f"Failed to send message to Slack: {response.status_code}, {response.text}")
-
-# Format the memory into a message for Slack
-slack_message = format_memory_for_slack(memory)
-
-# Send the formatted message to Slack
-send_message_to_slack(slack_message, slack_webhook_url)
+    # Read messages from the channel and respond
+    process_messages_and_respond(channel_id)
