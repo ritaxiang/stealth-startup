@@ -1,11 +1,15 @@
-import openai
+import os
+import cohere
 
 class Agent:
-    def __init__(self, name, role, llm_api_key):
+    def __init__(self, name, role, cohere_api_key):
         self.name = name  # e.g., "CEO"
         self.role = role  # e.g., "Chief Executive Officer"
-        self.llm_api_key = llm_api_key
+        self.cohere_api_key = cohere_api_key
         self.memory = []  # Memory to store previous actions or responses
+        
+        # Initialize Cohere Client
+        self.cohere_client = cohere.Client(self.cohere_api_key)
 
     def take_instruction(self, instruction):
         """Takes an instruction or task as input and processes it."""
@@ -14,24 +18,22 @@ class Agent:
         self._execute_action(response)
 
     def _process_with_llm(self, instruction):
-        """Uses an LLM (e.g., OpenAI) to process the instruction and generate a response."""
-        openai.api_key = self.llm_api_key
+        """Uses the Cohere LLM to process the instruction and generate a response."""
         prompt = f"As the {self.role}, {instruction}"
         
-        # Example of calling the OpenAI API (assuming GPT-4)
-        response = openai.Completion.create(
-            engine="text-davinci-003",
+        # Call Cohere's generate API
+        response = self.cohere_client.generate(
+            model='command-xlarge-nightly',  # You can adjust the model based on your need
             prompt=prompt,
             max_tokens=150
         )
-        result = response['choices'][0]['text'].strip()
         
+        result = response.generations[0].text.strip()
         print(f"{self.name} processed the instruction and generated: {result}")
         return result
 
     def _execute_action(self, response):
         """Executes the generated response (e.g., posting to Slack, saving to DB)."""
-        # This could involve posting a message to Slack or triggering another action.
         print(f"{self.name} is executing: {response}")
         
         # Optional: Store the action and response in memory for later
@@ -40,4 +42,3 @@ class Agent:
     def recall_memory(self):
         """Recalls previous actions and responses from memory."""
         return self.memory
-    
