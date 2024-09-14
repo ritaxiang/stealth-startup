@@ -59,8 +59,9 @@ class Dictator:
     }
 }
         )
+        
         response_json = json.loads(response.text)
-        #print(response_json)
+        print(response_json)
     
         # Access the "employees" key to retrieve the list of objects
         employees = response_json.get("employees", [])
@@ -73,12 +74,12 @@ class Dictator:
             response_type = employee.get("response_type")
             #print(f"Employee ID: {employee_id}, Response Type: {response_type}")
             # Process the employee's information
-            if employee_id in self.employees:
-                prompt = f"""This is the current conversation, continue the conversation by responding to the last message. """
+            if employee_id in self.employees and employee_id != messages[0]['user']:
+                prompt = f"""You are {self.get_employee_name(employee_id)}. This is the current conversation, continue the conversation by responding to the last message."""
                 for message in messages[::-1]:
-                    prompt += f"\n {self.get_employee_name(message['user'])}: {message['text']}"
+                    prompt += f"\n{self.get_employee_name(message['user'])}: {message['text']}"
                 
-                prompt += "\n\nMake your message conversational and format the text like a normal chat response. Only write the response text without quotations and do not give any prefix. Feel free to end or continue the conversation"""
+                prompt += "\n\nMake your message short, concise, conversational and format the text informally, like a regular chat. Only write the response text without quotations and do not give any prefix. Feel free to end or continue the conversation"""
 
                 self.employees[employee_id].generate_message(prompt)
             else:
@@ -88,7 +89,7 @@ class Dictator:
         
     def build_prompt(self, messages):
         prompt = """You are the manager of a startup. Based on the input provided, determine the top 3 employees that should respond. The employee can have either a tool response
-        or a message response, determine which response that this should be. You have the following employees. Pick only from the following employees:""" 
+        or a message response, determine which response that this should be. You have the following employees to choose from:""" 
 
         for employee in self.employees.values():
             prompt += f"\n- {employee.id}: {employee.role}"
@@ -97,12 +98,15 @@ class Dictator:
         for message in messages:
             prompt += f"\n{{\"role\": \"{message['user']}\", \"message\": \"{message['text']}\"}}\n"
 
-        prompt += "Determine the IDs of the to 3 employees that should respond and the response they should provide (tool or message). Ensure they are in the right JSON format. Pick from the following employees:"
+        prompt += "Determine the IDs of the to 3 employees in order that they should respond and the response they should provide (tool or message). Ensure they are in the right JSON format. Pick from the following employees:"
         for employee in self.employees.values():
             prompt += f"\n- {employee.id}: {employee.role}"
+
         return prompt
 
     def get_employee_name(self, employee_id):
+        print("\n\nLOOKING FOR ", employee_id)
+        print(self.employees)
         if employee_id in self.employees:
             return self.employees[employee_id].name
         else:

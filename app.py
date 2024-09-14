@@ -14,14 +14,23 @@ load_dotenv()
 # Initialize the agent
 cohere_api_key = os.getenv("COHERE_API_KEY")
 slack_token = os.getenv("IAN_K_SLACK_BOT_TOKEN")
+cto_slack_token = os.getenv("ELIJAH_K_SLACK_BOT_TOKEN")
 ceo_slack_id = "U07M0K20NB1"
+cto_slack_id = "U07MUQUCU6M"
 client = WebClient(token=slack_token)
 #ceo_slack_id = os.getenv("CEO_SLACK_ID")  # The Slack ID for the CEO
 
-# Initialize the CEO agent
-ceo_agent = CEO(name="Alice", id=ceo_slack_id, cohere_api_key=cohere_api_key, slack_token=slack_token)
+# Initialize agents
+ceo_agent = CEO(name="Ian Korovinsky", id=ceo_slack_id, cohere_api_key=cohere_api_key, slack_token=slack_token)
+cto_agent = CEO(name="Elijah Kurien", id=cto_slack_id, cohere_api_key=cohere_api_key, slack_token=cto_slack_token)
 
-employees = {ceo_agent.id: ceo_agent}
+
+employees = {
+    ceo_agent.id: ceo_agent,
+    cto_agent.id: cto_agent,
+}
+
+print("\n\nVERY START:", employees)
 #print(employees)
 dictator = Dictator(name="Dictator", cohere_api_key=cohere_api_key, employees=employees, channel_id="C07M9C6G0LW")
 
@@ -32,6 +41,7 @@ channel_id = "C07M9C6G0LW"  # Replace with your actual Slack channel ID
 messages = []
 
 while True:
+    #print("next message iteration:")
     time.sleep(5)
     try:
         response = client.conversations_history(channel=channel_id, limit=6)

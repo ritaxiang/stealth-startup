@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 class BaseAgent(ABC):
     def __init__(self, name, id, role, cohere_api_key, slack_token):
         self.name = name  # Agent's name, e.g., "Alice"
-        self.id = "U07M0K20NB1"
+        self.id = id
         self.role = role  # Agent's role, e.g., "CTO"
         self.cohere_client = cohere.Client(cohere_api_key)  # Initialize Cohere client directly with API key
         self.memory = []  # Memory to store previous actions or responses
@@ -30,7 +30,7 @@ class BaseAgent(ABC):
                 channel=channel_id,
                 text=message
             )
-            print(f"Message sent to Slack successfully: {response['message']['text']}")
+            #print(f"Message sent to Slack successfully: {response['message']['text']}")
         except SlackApiError as e:
             print(f"Failed to send message to Slack: {e.response['error']}")
 
@@ -45,16 +45,16 @@ class BaseAgent(ABC):
     def process_instruction_with_llm(self, instruction: str) -> str:
         """Uses the Cohere LLM client to process the instruction."""
         prompt = f"As the {self.role} of a tech startup company, {instruction}" # TODO: have some way to expand on the company once the idea is fleshed out
-        print("\n\n\n")
-        print(prompt)
-        print("\n\n\n")
+        #print("\n\n\n")
+        #print(prompt)
+        #print("\n\n\n")
 
         response = self.cohere_client.generate(
             prompt=prompt,
             max_tokens=150
         )
         result = response.generations[0].text.strip()
-        print(f"{self.name} processed the instruction and generated: {result}")
+        #print(f"{self.name} processed the instruction and generated: {result}")
         return result
 
     def get_slack_id(self):
@@ -75,7 +75,7 @@ class CEO(BaseAgent):
 
     def take_instruction(self, instruction):
         """Initial entry point for the CEO to start the feedback loop process."""
-        print(f"{self.name} received instruction: {instruction}")
+        #(f"{self.name} received instruction: {instruction}")
         self.run_stage(instruction)
 
     def summarize(self, text: str) -> str:
@@ -133,6 +133,7 @@ class CEO(BaseAgent):
         self.run_stage(response)
     
     def generate_message(self, prompt):
+        print(prompt)
         response = self.process_instruction_with_llm(prompt)
         self.store_in_memory("Generate Response", response)
         self.send_message_to_slack(f"{trim_quotations(response)}", "C07M9C6G0LW")
@@ -246,7 +247,7 @@ class Marketer(BaseAgent):
                 channel="C07N3SLH5EU",  # Replace with your Slack channel ID or name
                 text=f"Here is the logo generated from the prompt: {prompt}\n{image_url}"
             )
-            print("Message sent to Slack successfully!")
+            #print("Message sent to Slack successfully!")
         except SlackApiError as e:
             print(f"Slack API error: {e.response['error']}")
 
