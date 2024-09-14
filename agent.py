@@ -9,17 +9,13 @@ from typing import Any
 from abc import ABC, abstractmethod
 
 class BaseAgent(ABC):
-    def __init__(self, name, id, role, cohere_api_key, slack_token, openai_api_key=None):
-        self.name = name  # Agent's name
+    def __init__(self, name, id, role, cohere_api_key, slack_token):
+        self.name = name  # Agent's name, e.g., "Alice"
         self.id = id
-        self.role = role  # Agent's role
-        self.cohere_client = cohere.Client(api_key=cohere_api_key)  # Initialize Cohere client
-        self.slack_client = WebClient(token=slack_token)  # Initialize Slack client
-        self.openai_api_key = openai_api_key  # Store OpenAI API key (optional)
-        if openai_api_key:
-            import openai
-            openai.api_key = openai_api_key  # Set the OpenAI API key
+        self.role = role  # Agent's role, e.g., "CTO"
+        self.cohere_client = cohere.Client(cohere_api_key)  # Initialize Cohere client directly with API key
         self.memory = []  # Memory to store previous actions or responses
+        self.slack_client = WebClient(token=slack_token)  # Initialize Slack client with token
 
     @abstractmethod
     def take_instruction(self, instruction):
@@ -41,12 +37,11 @@ class BaseAgent(ABC):
         """Stores the instruction and action in memory."""
         self.memory.append({"instruction": instruction, "action": action})
 
-    # TODO: might not need
     def recall_memory(self):
         """Recalls previous actions and responses from memory."""
         return self.memory
     
-    def process_instruction_with_llm(self, instruction):
+    def process_instruction_with_llm(self, instruction: str) -> str:
         """Uses the Cohere LLM client to process the instruction."""
         prompt = f"As the {self.role} of a tech startup company, {instruction}" # TODO: have some way to expand on the company once the idea is fleshed out
         
@@ -59,11 +54,6 @@ class BaseAgent(ABC):
         print(f"{self.name} processed the instruction and generated: {result}")
         return result
 
-    @abstractmethod
-    def execute_task(self, instruction):
-        """Abstract method for agents to implement their specific tasks."""
-        pass
-
     def get_slack_id(self):
         """Getter method to get specific users slack ID."""
         return self.id
@@ -72,95 +62,73 @@ class BaseAgent(ABC):
 class CEO(BaseAgent):
     def __init__(self, name, id, cohere_api_key, slack_token):
         super().__init__(name, id, "CEO", cohere_api_key, slack_token)
-        self.current_stage = "market_research"  # Initial stage
+        self.stages = [
+            "market_research",
+            "idea_creation",
+            "product_creation",
+            "business_plan",
+        ]  # List of stages in order
+        self.current_stage_index = 0  # Initial stage index
 
     def take_instruction(self, instruction):
         """Initial entry point for the CEO to start the feedback loop process."""
         print(f"{self.name} received instruction: {instruction}")
-        self.execute_task(instruction)
+        self.run_stage(instruction)
 
-    def execute_task(self, instruction):
-        """Controls which phase of the feedback loop to execute."""
-        if self.current_stage == "market_research":
-            self.market_research(instruction)
-        elif self.current_stage == "idea_creation":
-            self.create_idea(instruction)
-        elif self.current_stage == "product_creation":
-            self.create_product(instruction)
-        elif self.current_stage == "business_plan":
-            self.finalize_business_plan(instruction)
-        else:
-            print("Invalid stage. No task to execute.")
+    def summarize(self, text: str) -> str:
+        """Summarized thoughts for slack output."""
+        prompt = f"""DO NOT USE MARKDOWN FORMATTING. Summarize the text I gave you in 3-4 bullet points. Be CONCISE. This
+        will be outputted to the slack channel for a summarized version of everything you've been thinking. Talk in 1st person as if you are the CEO thinking out loud.
+         Focus on the high-level stuff."""
+        response = self.process_instruction_with_llm(f"{prompt}: {text}")
+        return response 
 
-    def market_research(self, instruction):
-        """Step 1: Conduct market research and feed the results into idea creation."""
-        print(f"{self.name} is conducting market research on: {instruction}")
+    def run_stage(self, previous_output):
+        """General function to handle each stage recursively."""
+        if self.current_stage_index >= len(self.stages):
+            print("Feedback loop complete. Business plan is ready for execution.")
+            self.send_message_to_slack("Business plan is ready for execution.", "C07N3SLH5EU")
+            return  # End the recursive process when all stages are done
         
-        # First-person prompt for market research
-        prompt = f"""DO NOT USE MARKDOWN FORMATTING. I'm the CEO of a tech startup looking to enter the AI-driven healthcare market. I need to get a clear understanding of the current market dynamics. 
-        What are the key trends, challenges, and opportunities in this space? I want to find the major players, the gaps they're not addressing, and where we could make an impact. 
-        Talk in 1st person as if you are the CEO thinking out loud."""
+        current_stage = self.stages[self.current_stage_index]
         
+        # Determine the prompt based on the current stage
+        if current_stage == "market_research":
+            prompt = f"""DO NOT USE MARKDOWN FORMATTING. I'm the CEO of a tech startup looking to enter the AI-driven healthcare market. I need to get a clear understanding of the current market dynamics. 
+            What are the key trends, challenges, and opportunities in this space? I want to find the major players, the gaps they're not addressing, and where we could make an impact. 
+            Talk in 1st person as if you are the CEO thinking out loud. """
+            instruction = "Market Research"
+        
+        elif current_stage == "idea_creation":
+            prompt = f"""DO NOT USE MARKDOWN FORMATTING. Now that I've gathered valuable insights from my market research, I need to come up with a tech idea that can really make an impact. 
+            Based on the trends and opportunities I uncovered—{previous_output}—what innovative solution can we develop that solves the biggest pain points in this space? 
+            Talk in 1st person as if you are the CEO thinking out loud."""
+            instruction = "Tech Idea Creation"
+        
+        elif current_stage == "product_creation":
+            prompt = f"""DO NOT USE MARKDOWN FORMATTING. I've now developed a strong tech idea: {previous_output}. The next step is to conceptualize the product around this idea.
+            I need to think about how we can bring this idea to life in a way that solves the problem effectively, while also creating a product that is easy to use, scalable, and marketable. 
+            Talk in 1st person as if you are the CEO thinking out loud."""
+            instruction = "Product Creation"
+        
+        elif current_stage == "business_plan":
+            prompt = f"""DO NOT USE MARKDOWN FORMATTING. Now that we've conceptualized the product, it's time to finalize the business plan. The product is based on {previous_output}, and I need to think carefully about our strategy moving forward.
+            What's our go-to-market strategy? How should we position ourselves against competitors, and what’s our revenue model? This business plan needs to be forward-looking and adaptable as we grow. 
+            Talk in 1st person as if you are the CEO thinking out loud."""
+            instruction = "Business Plan Finalization"
+        
+        # Process the prompt with the LLM
         response = self.process_instruction_with_llm(prompt)
         self.store_in_memory(instruction, response)
-        self.send_message_to_slack(f"Market Research Results: {response}", "C07N3SLH5EU")  # Send to Slack
+        summarized_response = self.summarize(response)
+        self.send_message_to_slack(f"{instruction}: {summarized_response}", "C07N3SLH5EU")  # Send to Slack
 
-        # Move to next phase
-        self.current_stage = "idea_creation"
-        self.execute_task(response)
+        # Move to the next stage
+        self.current_stage_index += 1
 
-    def create_idea(self, market_research_output):
-        """Step 2: Based on market research, come up with a tech idea."""
-        print(f"{self.name} is creating a tech idea based on market research.")
+        # Recursively call the function to proceed to the next stage
+        self.run_stage(response)
 
-        # First-person prompt for idea creation
-        prompt = f"""DO NOT USE MARKDOWN FORMATTING. Now that I've gathered valuable insights from my market research on the AI-driven healthcare market, I need to come up with a tech idea that can really make an impact. 
-        Based on the trends and opportunities I uncovered—{market_research_output}—what innovative solution can we develop that solves the biggest pain points in this space? 
-        I want to think this through clearly as a CEO and find something that will resonate with potential customers and stakeholders. 
-        Talk in 1st person as if you are the CEO thinking out loud. Do not use markdown formatting."""
-        
-        response = self.process_instruction_with_llm(prompt)
-        self.store_in_memory("Tech Idea Creation", response)
-        self.send_message_to_slack(f"Tech Idea: {response}", "C07N3SLH5EU")  # Send to Slack
-
-        # Move to next phase
-        self.current_stage = "product_creation"
-        self.execute_task(response)
-
-    def create_product(self, idea_output):
-        """Step 3: Using the idea, conceptualize the product and create a business plan."""
-        print(f"{self.name} is conceptualizing the product based on the idea.")
-
-        # First-person prompt for product creation
-        prompt = f"""DO NOT USE MARKDOWN FORMATTING. I've now developed a strong tech idea: {idea_output}. The next step is to conceptualize the product around this idea.
-        I need to think about how we can bring this idea to life in a way that solves the problem effectively, while also creating a product that is easy to use, scalable, and marketable. 
-        What features should this product have, and how can we make sure it's something healthcare providers or patients will really want to use? 
-        Talk in 1st person as if you are the CEO thinking out loud. Do not use markdown formatting."""
-        
-        response = self.process_instruction_with_llm(prompt)
-        self.store_in_memory("Product and Business Plan", response)
-        self.send_message_to_slack(f"Product Creation and Business Plan: {response}", "C07N3SLH5EU")  # Send to Slack
-
-        # Move to next phase
-        self.current_stage = "business_plan"
-        self.execute_task(response)
-
-    def finalize_business_plan(self, product_output):
-        """Final step: Reflect on the business plan and prepare for execution."""
-        print(f"{self.name} is finalizing the business plan.")
-
-        # First-person prompt for business plan finalization
-        prompt = f"""DO NOT USE MARKDOWN FORMATTING. Now that we've conceptualized the product, it's time to finalize the business plan. The product is based on {product_output}, and I need to think carefully about our strategy moving forward.
-        What's our go-to-market strategy? How should we position ourselves against competitors, and what’s our revenue model? This business plan needs to be forward-looking and adaptable as we grow. 
-        Talk in 1st person as if you are the CEO thinking out loud. Do not use markdown formatting."""
-        
-        response = self.process_instruction_with_llm(prompt)
-        self.store_in_memory("Final Business Plan", response)
-        self.send_message_to_slack(f"Final Business Plan: {response}", "C07N3SLH5EU")  # Send to Slack
-
-        # Feedback loop is complete
-        print("Feedback loop complete. Business plan is ready for execution.")
-        self.current_stage = "completed"  # Mark the loop as completed
 
 class Marketer(BaseAgent):
     def __init__(self, name, id, role, cohere_api_key, slack_token, openai_api_key):

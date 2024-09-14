@@ -1,29 +1,28 @@
-# import os
-# from slack_sdk import WebClient
-# from slack_sdk.errors import SlackApiError
-# from dotenv import load_dotenv
-# from agent import CEO
+import os
+from slack_sdk import WebClient
+from slack_sdk.errors import SlackApiError
+from dotenv import load_dotenv
+from agent import CEO
 
-# # Load environment variables from .env file
-# load_dotenv()
+# Load environment variables from .env file
+load_dotenv()
 
-# # Initialize the Slack WebClient with Bot User OAuth Token
+# Initialize the Slack WebClient with Bot User OAuth Token
 
-# # Initialize the agent
-# cohere_api_key = os.getenv("COHERE_API_KEY")
-# slack_token = os.getenv("IAN_K_SLACK_BOT_TOKEN")
-# ceo_slack_id = "U07M0K20NB1"
-# client = WebClient(token=slack_token)
-# #ceo_slack_id = os.getenv("CEO_SLACK_ID")  # The Slack ID for the CEO
+# Initialize the agent
+cohere_api_key = os.getenv("COHERE_API_KEY")
+slack_token = os.getenv("IAN_K_SLACK_BOT_TOKEN")
+ceo_slack_id = "U07M0K20NB1"
+client = WebClient(token=slack_token)
+#ceo_slack_id = os.getenv("CEO_SLACK_ID")  # The Slack ID for the CEO
 
-# # Initialize the CEO agent
-# ceo_agent = CEO(name="Alice", id=ceo_slack_id, cohere_api_key=cohere_api_key, slack_token=slack_token)
+# Initialize the CEO agent
+ceo_agent = CEO(name="Alice", id=ceo_slack_id, cohere_api_key=cohere_api_key, slack_token=slack_token)
 
-# # CEO executes a task (e.g., setting up company goals)
-# ceo_agent.take_instruction("the AI-driven healthcare market")
+# CEO executes a task (e.g., setting up company goals)
+ceo_agent.take_instruction("the AI-driven healthcare market")
 
-# CEO develops a company strategy
-#ceo_agent.execute_task("entering the AI-driven healthcare market")
+ceo_agent.take_instruction("entering the AI-driven healthcare market")
 
 # # Function to read messages from a specific Slack channel
 # def read_slack_messages(channel_id, limit=10):
@@ -80,28 +79,28 @@
 #     process_messages_and_respond(channel_id)
 
 # Marketer Testing
-import os
-import openai
-from dotenv import load_dotenv
-from agent import Marketer  # Import the Marketer class
+# import os
+# import openai
+# from dotenv import load_dotenv
+# from agent import Marketer  # Import the Marketer class
 
-# Load environment variables from .env
-load_dotenv()
+# # Load environment variables from .env
+# load_dotenv()
 
-# Initialize API keys and tokens
-slack_token = os.getenv("MARKET_TOKEN")
-cohere_api_key = os.getenv("COHERE_API_KEY")
-openai_api_key = os.getenv("OPENAI_API_KEY")
+# # Initialize API keys and tokens
+# slack_token = os.getenv("MARKET_TOKEN")
+# cohere_api_key = os.getenv("COHERE_API_KEY")
+# openai_api_key = os.getenv("OPENAI_API_KEY")
 
-# Initialize the marketer agent
-marketer = Marketer(
-    name="MarketingAgent",
-    id="U07M0K20NB1",  # Replace with the Slack ID of the agent
-    role="Marketing Specialist",
-    cohere_api_key=cohere_api_key,
-    slack_token=slack_token,
-    openai_api_key=openai_api_key
-)
+# # Initialize the marketer agent
+# marketer = Marketer(
+#     name="MarketingAgent",
+#     id="U07M0K20NB1",  # Replace with the Slack ID of the agent
+#     role="Marketing Specialist",
+#     cohere_api_key=cohere_api_key,
+#     slack_token=slack_token,
+#     openai_api_key=openai_api_key
+# )
 
 # Example task to create a logo and send it to Slack
 # instruction = "Create a minimalist pixel logo for a tech company"
@@ -120,6 +119,6 @@ marketer = Marketer(
 # print(logo_response)
 
 # Example task to create a branding document and send it to Slack
-instruction = "Create a branding document for a tech startup, be detailed please'"
-branding_response = marketer.create_branding_document()
-print(branding_response)
+# instruction = "Create a branding document for a tech startup, be detailed please'"
+# branding_response = marketer.create_branding_document()
+# print(branding_response)
