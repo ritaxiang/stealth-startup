@@ -76,7 +76,7 @@ class Dictator:
             if employee_id in self.employees:
                 prompt = f"""This is the current conversation, continue the conversation by responding to the last message. """
                 for message in messages[::-1]:
-                    prompt += f"\n- {self.get_employee_name(employee_id)}: {message['text']}"
+                    prompt += f"\n {self.get_employee_name(message['user'])}: {message['text']}"
                 
                 prompt += "\n\nMake your message conversational and format the text like a normal chat response. Only write the response text without quotations and do not give any prefix. Feel free to end or continue the conversation"""
 
