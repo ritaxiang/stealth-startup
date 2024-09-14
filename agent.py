@@ -5,13 +5,14 @@ import requests  # For downloading the image
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from typing import Any
+from helpers import *
 
 from abc import ABC, abstractmethod
 
 class BaseAgent(ABC):
     def __init__(self, name, id, role, cohere_api_key, slack_token):
         self.name = name  # Agent's name, e.g., "Alice"
-        self.id = id
+        self.id = "U07M0K20NB1"
         self.role = role  # Agent's role, e.g., "CTO"
         self.cohere_client = cohere.Client(cohere_api_key)  # Initialize Cohere client directly with API key
         self.memory = []  # Memory to store previous actions or responses
@@ -44,11 +45,13 @@ class BaseAgent(ABC):
     def process_instruction_with_llm(self, instruction: str) -> str:
         """Uses the Cohere LLM client to process the instruction."""
         prompt = f"As the {self.role} of a tech startup company, {instruction}" # TODO: have some way to expand on the company once the idea is fleshed out
-        
+        print("\n\n\n")
+        print(prompt)
+        print("\n\n\n")
+
         response = self.cohere_client.generate(
-            model='command-xlarge-nightly',  # Adjust the model based on the task
             prompt=prompt,
-            max_tokens=1000
+            max_tokens=150
         )
         result = response.generations[0].text.strip()
         print(f"{self.name} processed the instruction and generated: {result}")
