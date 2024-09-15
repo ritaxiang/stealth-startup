@@ -161,14 +161,14 @@ class Marketer(BaseAgent):
     def take_instruction(self, instruction):
         """Processes the instruction for branding, logo creation, or design work."""
         response = self.process_instruction_with_llm(instruction)
-
-        if "logo" in instruction.lower():
+        
+        """ if "logo" in instruction.lower():
             action = self.create_logo()
         elif "branding" in instruction.lower():
             action = self.create_branding_document()
-        else:
-            self.generic_message(instruction)
-            action = f"{self.name} processed the instruction: {response}"
+        else: """
+        self.generic_message(instruction)
+        action = f"{self.name} processed the instruction: {response}"
 
         self.store_in_memory(instruction, action)
         return action

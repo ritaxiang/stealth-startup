@@ -77,6 +77,7 @@ class Dictator:
                         if role == "CTO":
                             agent.take_instruction(event.metadata.get("task", ""))
                         elif role == "Marketer":
+                            print("Creating logo...")
                             agent.create_logo()
                     else:
                         # Call the regular agent method to participate in the conversation
