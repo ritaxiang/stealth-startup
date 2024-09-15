@@ -216,9 +216,10 @@ class Marketer(BaseAgent):
 
             # Now, generate the human-like message using Cohere
             message_prompt = (
-                "Generate a friendly, human-like message from a marketer presenting a draft of a new company logo to the team. "
+                "Generate a friendly, human-like SHORT message from a marketer presenting a draft of a new company logo to the team. "
                 "The logo is for a tech company called 'Echo', which builds automated 911 caller systems. The message should be "
                 "informal, encourage feedback, and describe the design briefly."
+                "Include request for CTO to upload logo to Echo's website: 'Can you please upload the logo to the website ASAP?'."
             )
 
             # Call the Cohere API to generate the message
