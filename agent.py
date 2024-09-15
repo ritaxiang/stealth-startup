@@ -15,7 +15,7 @@ class BaseAgent(ABC):
         self.name = name  # Agent's name, e.g., "Alice"
         self.id = id
         self.role = role  # Agent's role, e.g., "CTO"
-        self.cohere_client = cohere.Client(cohere_api_key)  # Initialize Cohere client directly with API key
+        self.cohere_client = cohere.Client(cohere_api_key, log_warning_experimental_features=False)  # Initialize Cohere client directly with API key
         self.memory = []  # Memory to store previous actions or responses
         self.slack_client = WebClient(token=slack_token)  # Initialize Slack client with token
 
@@ -134,7 +134,6 @@ class CEO(BaseAgent):
         self.run_stage(response)
     
     def generate_message(self, prompt):
-        print(prompt)
         response = self.process_instruction_with_llm(prompt)
         self.store_in_memory("Generate Response", response)
         self.send_message_to_slack(f"{trim_quotations(response)}", "C07M9C6G0LW")

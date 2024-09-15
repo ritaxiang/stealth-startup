@@ -24,7 +24,6 @@ client = WebClient(token=slack_token)
 ceo_agent = CEO(name="Ian Korovinsky", id=ceo_slack_id, cohere_api_key=cohere_api_key, slack_token=slack_token)
 cto_agent = CEO(name="Elijah Kurien", id=cto_slack_id, cohere_api_key=cohere_api_key, slack_token=cto_slack_token)
 
-
 employees = {
     ceo_agent.id: ceo_agent,
     cto_agent.id: cto_agent,
