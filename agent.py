@@ -163,7 +163,7 @@ class Marketer(BaseAgent):
         response = self.process_instruction_with_llm(instruction)
 
         if "logo" in instruction.lower():
-            action = self.create_logo(instruction)
+            action = self.create_logo()
         elif "branding" in instruction.lower():
             action = self.create_branding_document()
         else:

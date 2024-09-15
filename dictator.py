@@ -45,7 +45,7 @@ class Dictator:
         self.events = [
             #Event(name="Conduct market research", roles=("CEO",), tool_used=False),
             #Event(name="Discuss different viewpoints of the product derived from the market research step", roles=("CEO", "CTO"), tool_used=False),
-            Event(name="Make changes to the website", roles=("CTO",), tool_used=True, metadata={"task": "Fix the formatting and improve the design. Make it more modern."}),
+            #Event(name="Make changes to the website", roles=("CTO",), tool_used=True, metadata={"task": "Fix the formatting and improve the design. Make it more modern."}),
             Event(name="Design a new logo", roles=("Marketer",), tool_used=True, metadata={"task": "Design a new company logo"}),
             Event(name="Discuss thoughts about the logo design", roles=("CTO", "CEO", "Marketer"), metadata={"CEO": "Your viewpoint should be that you don't like it.", "CTO": "Your viewpoint should be that you like it.", "Marketer": "Your viewpoint should be that you like it"}),
             Event(name="Add the logo to the website", roles=("CTO",), tool_used=True, metadata={"task": "Integrate new logo into homepage"})
