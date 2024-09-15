@@ -10,6 +10,7 @@ from slack_sdk.errors import SlackApiError
 from typing import Any
 from helpers import *
 from swe_agent import SWEAgent
+from swe_agent import SWEAgent
 
 from abc import ABC, abstractmethod
 
