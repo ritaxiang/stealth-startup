@@ -399,13 +399,13 @@ class CTOAgent(BaseAgent):
         proposed_changes = self.swe_agent.propose_changes(task_description)
 
         # Step 3: Ask for confirmation to implement the changes
-        user_input = input("Do you want to implement the proposed changes? (Y/N): ")
-        if user_input.strip().upper() == 'Y':
-            self.swe_agent.implement_feature(proposed_changes)
-            print("Changes implemented. Pushing to GitHub...")
-            self.push_changes_to_github()
-        else:
-            print("Changes were not implemented.")
+        """ user_input = input("Do you want to implement the proposed changes? (Y/N): ")
+        if user_input.strip().upper() == 'Y': """
+        self.swe_agent.implement_feature(proposed_changes)
+        print("Changes implemented. Pushing to GitHub...")
+        self.push_changes_to_github()
+        """ else:
+            print("Changes were not implemented.") """
 
     def push_changes_to_github(self):
         """Commit and push the changes to the linked GitHub repository."""

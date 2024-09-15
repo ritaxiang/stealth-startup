@@ -7,6 +7,7 @@ from agent import CEO
 import json
 import math
 import random
+import time
 
 """ 
 load_dotenv()
@@ -19,18 +20,85 @@ client = WebClient(token=slack_token)
 cohere_api_key = os.getenv("COHERE_API_KEY")
 ceo_agent = Agent(name="Alice", role="CEO", cohere_api_key=cohere_api_key) """
 
+class Event:
+    def __init__(self, name, roles, tool_used=False, metadata=None):
+        self.name = name  # The event's name, e.g., "Conduct market research"
+        self.roles = roles  # A tuple or list of roles involved in the event, e.g., ("CEO", "CTO")
+        self.tool_used = tool_used  # A flag indicating if a tool (like SWEAgent) is needed
+        self.metadata = metadata or {}  # Optional additional metadata for the event
+
+    def __repr__(self):
+        return f"Event(name={self.name}, roles={self.roles}, tool_used={self.tool_used}, metadata={self.metadata})"
+
+
 class Dictator:
-    def __init__(self, name, cohere_api_key, employees, channel_id):
-        self.events = [("Conduct market research", "CEO"), ("Develop AI model", "CTO"), ("Design MVP", "Product Manager")]
-        self.current_event = 0
+    def __init__(self, name, cohere_api_key, employees, channel_id, slack_client, roles_to_agents):
+        self.current_event_index = 0
         self.cohere_api_key = cohere_api_key
+        self.channel_id = channel_id
         self.employees = employees
-        self.channel_id = channel_id  # Replace with your actual Slack channel ID
+        #self.channel_id = channel_id  # Replace with your actual Slack channel ID
+        self.slack = slack_client
+        self.roles_to_agents = roles_to_agents
+
+         # Define events with metadata, assign roles and tool usage flags
+        self.events = [
+            #Event(name="Conduct market research", roles=("CEO",), tool_used=False),
+            #Event(name="Discuss different viewpoints of the product derived from the market research step", roles=("CEO", "CTO"), tool_used=False),
+            Event(name="Make changes to the website", roles=("CTO",), tool_used=True, metadata={"task": "Fix the formatting and improve the design. Make it more modern."}),
+            Event(name="Design a new logo", roles=("Marketer",), tool_used=True, metadata={"task": "Design a new company logo"}),
+            Event(name="Discuss thoughts about the logo design", roles=("CTO", "CEO", "Marketer"), metadata={"CEO": "Your viewpoint should be that you don't like it.", "CTO": "Your viewpoint should be that you like it.", "Marketer": "Your viewpoint should be that you like it"}),
+            Event(name="Add the logo to the website", roles=("CTO",), tool_used=True, metadata={"task": "Integrate new logo into homepage"})
+        ]
 
         # Initialize Cohere Client
         self.cohere_client = cohere.Client(self.cohere_api_key, log_warning_experimental_features=False)
 
     # Employees = {id: ID, agent: Agent}
+    def process_event(self, event, channel_id):
+        """Processes a single event by assigning tasks to agents based on roles and tool flags."""
+        print(f"Processing Event: {event.name}")
+
+        # Fetch the latest messages from Slack for context
+        #self.fetch_slack_messages()
+
+        # If there are multiple agents, initiate a discussion between them
+        if len(event.roles) > 1:
+            print(f"Initiating a discussion between: {', '.join(event.roles)}")
+            self.initiate_discussion(event, channel_id)
+        else:
+            # Single agent task handling
+            for role in event.roles:
+                if role in self.roles_to_agents:
+                    agent = self.roles_to_agents[role]
+                    print(f"Assigning task to {agent.name} ({agent.role})")
+
+                    if event.tool_used:
+                        if role == "CTO":
+                            agent.take_instruction(event.metadata.get("task", ""))
+                        elif role == "Marketer":
+                            agent.create_logo()
+                    else:
+                        # Call the regular agent method to participate in the conversation
+                        agent.take_instruction(event.name)
+
+    
+
+    def initiate_discussion(self, event, channel_id):
+        counter = 0
+        while counter < 8:
+            time.sleep(5)
+            try:
+                response = self.slack.conversations_history(channel=channel_id, limit=6)
+                #print(response)
+                messages = response['messages']
+                if len(messages) > 0:
+                    self.process_message(messages)
+            except SlackApiError as e:
+                print(f"Error retrieving messages: {e.response['error']}")
+                messages = []
+                return
+            counter += 1
 
     def process_message(self, messages):
         prompt = self.build_prompt(messages)
@@ -79,7 +147,6 @@ class Dictator:
         employees = response_json.get("employees", [])
         progress = response_json.get("progress", 0)
         topic = response_json.get("value", "")
-        self.current_event += 0.2
 
         # Now you can iterate over the employees and handle the data
         #print(self.employees)
@@ -121,7 +188,7 @@ class Dictator:
         for employee in employees_list:
             prompt += f"\n- ID: {employee.id}"
         
-        prompt += f"\n\Regarding this event {self.events[min(math.floor(self.current_event), 2)]}, give a specific topic that was not used before for continuation of the conversation to discuss and store it in \"value\". Give a \"progress\" of 1 to end the conversation. Otherwise, give a 0 to continue this conversation."
+        prompt += f"\n\Regarding this event {self.events[self.current_event_index]}, give a specific topic that was not used before for continuation of the conversation to discuss and store it in \"value\". Give a \"progress\" of 1 to end the conversation. Otherwise, give a 0 to continue this conversation."
         return prompt
 
     def get_employee_name(self, employee_id):

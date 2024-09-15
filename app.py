@@ -43,9 +43,15 @@ employees = {
     marketer_agent.id: marketer_agent
 }
 
+roles_to_agents = {
+    "CEO": ceo_agent,
+    "CTO": cto_agent,
+    "Marketer": marketer_agent
+}
+
 print("\n\nVERY START:", employees)
 #print(employees)
-dictator = Dictator(name="Dictator", cohere_api_key=cohere_api_key, employees=employees, channel_id="C07MF3WH7UJ")
+dictator = Dictator(name="Dictator", cohere_api_key=cohere_api_key, employees=employees, channel_id="C07MF3WH7UJ", slack_client=client, roles_to_agents=roles_to_agents)
 
 # CEO executes a task (e.g., setting up company goals)
 # ceo_agent.take_instruction("the AI-driven healthcare market")
@@ -53,15 +59,6 @@ dictator = Dictator(name="Dictator", cohere_api_key=cohere_api_key, employees=em
 channel_id = "C07MF3WH7UJ"  # Replace with your actual Slack channel ID
 messages = []
 
-while True:
-    #print("next message iteration:")
+for event in dictator.events:
     time.sleep(5)
-    try:
-        response = client.conversations_history(channel=channel_id, limit=6)
-        #print(response)
-        messages = response['messages']
-        if len(messages) > 0:
-            dictator.process_message(messages)
-    except SlackApiError as e:
-        print(f"Error retrieving messages: {e.response['error']}")
-        messages = []
+    dictator.process_event(event, channel_id)
