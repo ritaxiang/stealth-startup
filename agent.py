@@ -234,7 +234,8 @@ class Marketer(BaseAgent):
             generated_message = cohere_response.generations[0].text.strip()
 
             # Combine the generated message with the image URL
-            message = f"{generated_message}\n\n{image_url}"
+            # message = f"{generated_message}\n\n{image_url}"
+            message="Can you change the logo image to this? {image_url}"
 
             # Send the Cohere-generated message with the image link to Slack
             self.send_image_link_to_slack(message)
