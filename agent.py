@@ -6,6 +6,7 @@ from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from typing import Any
 from helpers import *
+from swe_agent import SWEAgent
 
 from abc import ABC, abstractmethod
 
@@ -60,6 +61,14 @@ class BaseAgent(ABC):
     def get_slack_id(self):
         """Getter method to get specific users slack ID."""
         return self.id
+    
+    def summarize(self, text: str) -> str:
+        """Summarized thoughts for slack output."""
+        prompt = f"""DO NOT USE MARKDOWN FORMATTING. Summarize the text I gave you in 3-4 bullet points. Be CONCISE. This
+        will be outputted to the slack channel for a summarized version of everything you've been thinking. Talk in 1st person as if you are the CEO thinking out loud.
+         Focus on the high-level stuff."""
+        response = self.process_instruction_with_llm(f"{prompt}: {text}")
+        return response 
 
 
 class CEO(BaseAgent):
@@ -77,14 +86,6 @@ class CEO(BaseAgent):
         """Initial entry point for the CEO to start the feedback loop process."""
         #(f"{self.name} received instruction: {instruction}")
         self.run_stage(instruction)
-
-    def summarize(self, text: str) -> str:
-        """Summarized thoughts for slack output."""
-        prompt = f"""DO NOT USE MARKDOWN FORMATTING. Summarize the text I gave you in 3-4 bullet points. Be CONCISE. This
-        will be outputted to the slack channel for a summarized version of everything you've been thinking. Talk in 1st person as if you are the CEO thinking out loud.
-         Focus on the high-level stuff."""
-        response = self.process_instruction_with_llm(f"{prompt}: {text}")
-        return response 
 
     def run_stage(self, previous_output):
         """General function to handle each stage recursively."""
@@ -253,3 +254,66 @@ class Marketer(BaseAgent):
 
     def execute_task(self, instruction):
         return self.take_instruction(instruction)
+
+
+
+class CTOAgent(BaseAgent):
+    def __init__(self, name, id, cohere_api_key, slack_token, github_repo_path, github_token):
+        super().__init__(name, id, "CTO", cohere_api_key, slack_token)
+        self.github_repo_path = github_repo_path  # Path to the local GitHub repository
+        self.github_token = github_token  # GitHub Personal Access Token (for HTTPS authentication)
+        self.swe_agent = SWEAgent(self.github_repo_path)  # Initialize the SWEAgent to handle project changes
+
+    def take_instruction(self, instruction):
+        """Process an instruction to implement code-related changes."""
+        print(f"{self.name} received instruction: {instruction}")
+        self.code(instruction)
+
+    def code(self, task_description):
+        """Generates code changes and pushes them to the linked repository."""
+        print(f"{self.name} is executing the code function.")
+
+        # Step 1: Map the project directory
+        project_map = self.swe_agent.map_directory()
+
+        # Step 2: Propose changes based on the task
+        proposed_changes = self.swe_agent.propose_changes(task_description)
+
+        # Step 3: Ask for confirmation to implement the changes
+        user_input = input("Do you want to implement the proposed changes? (Y/N): ")
+        if user_input.strip().upper() == 'Y':
+            self.swe_agent.implement_feature(proposed_changes)
+            print("Changes implemented. Pushing to GitHub...")
+            self.push_changes_to_github()
+        else:
+            print("Changes were not implemented.")
+
+    def push_changes_to_github(self):
+        """Commit and push the changes to the linked GitHub repository."""
+        self.swe_agent.commit_changes()  # Commit changes using SWEAgent
+        print(f"Changes have been committed to the repository at {self.github_repo_path}.")
+
+        # Push the committed changes to the GitHub repository
+        try:
+            repo_url = f"https://{self.github_token}@github.com/rajansagarwal/stealth-startup-dev.git"
+            os.system(f'git -C {self.github_repo_path} push {repo_url}')
+            print(f"Changes pushed to {repo_url}.")
+        except Exception as e:
+            print(f"Failed to push changes: {e}")
+
+    def view_ceo_memory(self, ceo_agent):
+        """View the memory/messages of the CEO (or other agent)."""
+        memory = ceo_agent.recall_memory()
+        if memory:
+            print(f"{ceo_agent.name}'s Memory:")
+            for idx, entry in enumerate(memory):
+                print(f"{idx + 1}. Instruction: {entry['instruction']}")
+                print(f"   Action: {entry['action']}")
+        else:
+            print(f"{ceo_agent.name} has no stored memory or messages.")
+
+    def summarize_instruction(self, text):
+        """Summarize the instruction for Slack output (using LLM)."""
+        summarized = self.summarize(text)
+        print(f"Summarized Instruction: {summarized}")
+        return summarized

@@ -171,20 +171,26 @@ Provide the code changes to implement this task in the same format as the exampl
         return result.returncode == 0
     
     def commit_changes(self):
-        subprocess.run(["git", "add", "."], cwd=self.project_path)
-        subprocess.run(["git", "commit", "-m", "Implemented new feature"], cwd=self.project_path)
+        try:
+            print("trace1")
+            subprocess.run(["git", "add", "."], cwd=self.project_path)
+            print("trace2")
+            subprocess.run(["git", "commit", "-m", "Implemented new feature"], cwd=self.project_path)
+            print("trace3")
+        except:
+            print("could not add and commit")
 
-if __name__ == "__main__":
-    agent = SWEAgent("../landing")
-    project_map = agent.map_directory()
-    print("Project structure and file contents mapped.")
+# if __name__ == "__main__":
+#     agent = SWEAgent("../../stealth-startup-dev/landing")
+#     project_map = agent.map_directory()
+#     print("Project structure and file contents mapped.")
 
-    task = "Fix the formatting and improve the design. Make it more modern."
-    proposed_changes = agent.propose_changes(task)
+#     task = "Fix the formatting and improve the design. Make it more modern."
+#     proposed_changes = agent.propose_changes(task)
 
-    user_input = input("Do you want to implement the proposed changes? (Y/N): ")
-    if user_input.strip().upper() == 'Y':
-        agent.implement_feature(proposed_changes)
-        agent.commit_changes()
-    else:
-        print("Changes were not implemented.")
+#     user_input = input("Do you want to implement the proposed changes? (Y/N): ")
+#     if user_input.strip().upper() == 'Y':
+#         agent.implement_feature(proposed_changes)
+#         agent.commit_changes()
+#     else:
+#         print("Changes were not implemented.")
