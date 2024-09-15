@@ -17,7 +17,7 @@ if not cohere_api_key or not slack_token or not replicate_api_token:
 # Initialize the Marketer agent
 marketer_agent = Marketer(
     name="MarketingAgent", 
-    id="U07MHLJJ4TW",  # Replace with your marketer's Slack ID
+    id="C07MJHRPJS0",  # Replace with your marketer's Slack ID
     role="Marketing Specialist", 
     cohere_api_key=cohere_api_key, 
     slack_token=slack_token,
@@ -26,9 +26,9 @@ marketer_agent = Marketer(
 
 # Test the image generation (logo creation)
 def test_create_logo():
-    prompt = "A modern tech company logo with clean lines and a minimalist style"
+    # prompt = "Design a modern, minimalist logo for a tech company called 'Echo', which builds automated 911 caller systems. The logo should convey trust, reliability, and quick response. The design should incorporate clean lines, a subtle tech feel, and a symbol representing communication or emergency response (e.g., a soundwave or signal). Use colors that evoke safety, such as blue or green, but keep the overall design sleek and professional."
     print("Testing logo creation...")
-    logo_result = marketer_agent.create_logo(prompt)
+    logo_result = marketer_agent.create_logo()
     print(f"Logo creation result: {logo_result}")
 
 # Test the branding document generation
@@ -39,7 +39,7 @@ def test_create_branding_document():
 
 if __name__ == "__main__":
     # Run the logo generation test
-    test_create_logo()
+    # test_create_logo()
 
     # Run the branding document generation test
     test_create_branding_document()

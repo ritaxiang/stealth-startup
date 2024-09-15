@@ -1,7 +1,10 @@
 import os
+import docx
 import cohere
 import replicate
 import requests  # For downloading the image
+import random  # Import random for selecting a random message
+from io import BytesIO
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from typing import Any
@@ -162,14 +165,22 @@ class Marketer(BaseAgent):
         self.store_in_memory(instruction, action)
         return action
 
-    def create_logo(self, prompt):
-        """Generates a logo using Replicate API and sends it to Slack."""
+    def create_logo(self):
+        """Generates a logo using Replicate API and generates a human-like reply using Cohere, then sends it to Slack."""
         print(f"{self.name} is generating a logo with Replicate...")
 
+        # Static prompt for the logo creation
+        logo_prompt = (
+            "Design a modern, minimalist logo for a tech company called 'Echo', which builds automated 911 caller systems. "
+            "The logo should convey trust, reliability, and quick response. The design should incorporate clean lines, a subtle "
+            "tech feel, and a symbol representing communication or emergency response (e.g., a soundwave or signal). Use colors "
+            "that evoke safety, such as blue or green, but keep the overall design sleek and professional."
+        )
+
         try:
-            # Set up the input for the Replicate API
+            # Set up the input for the Replicate API to generate the logo
             input = {
-                "prompt": prompt,
+                "prompt": logo_prompt,
                 "guidance": 3.5  # Customize guidance if needed
             }
 
@@ -180,31 +191,52 @@ class Marketer(BaseAgent):
             )
             image_url = output[0]  # The first image URL generated
 
-            # Send the image URL to Slack instead of uploading the file
-            self.send_image_link_to_slack(image_url, prompt)
+            # Now, generate the human-like message using Cohere
+            message_prompt = (
+                "Generate a friendly, human-like message from a marketer presenting a draft of a new company logo to the team. "
+                "The logo is for a tech company called 'Echo', which builds automated 911 caller systems. The message should be "
+                "informal, encourage feedback, and describe the design briefly."
+            )
 
-            action = f"{self.name} created a new logo: {image_url}"
+            # Call the Cohere API to generate the message
+            cohere_response = self.cohere_client.generate(
+                model='command-xlarge-nightly',  # Use a large model for high-quality text
+                prompt=message_prompt,
+                max_tokens=100,
+                temperature=0.8  # Adjust the temperature for more creativity
+            )
+
+            # Extract the generated message from Cohere's response
+            generated_message = cohere_response.generations[0].text.strip()
+
+            # Combine the generated message with the image URL
+            message = f"{generated_message}\n\n{image_url}"
+
+            # Send the Cohere-generated message with the image link to Slack
+            self.send_image_link_to_slack(message)
+
+            action = f"{self.name} shared a draft logo: {image_url}"
             return action
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
             return "Failed to create a logo."
 
     def create_branding_document(self):
-        """Generates a branding document using Cohere and sends it to Slack."""
+        """Generates a branding document using Cohere and formats it as structured text for Slack."""
         print(f"{self.name} is generating a branding document using Cohere...")
 
         try:
-            # Define the prompt for the branding document
+            # Step 1: Generate branding document using Cohere
             prompt = """
             Generate a clean and professional branding document for a tech startup called 'Stealth Startup.' 
             The document should include the following sections:
             
-            1. **Company Vision**: Explain the long-term vision of the company and its mission to revolutionize the tech industry.
-            2. **Mission Statement**: A short, impactful mission statement that captures the essence of the company.
-            3. **Brand Colors**: Suggest 3 primary brand colors that reflect professionalism, innovation, and security.
-            4. **Typography**: Recommend 2 fonts (one for headers and one for body text) that align with the brand's modern and minimalist aesthetic.
-            5. **Messaging Tone and Voice**: Describe the tone and voice of the company's messaging (e.g., authoritative, friendly, approachable).
-            6. **Logo Guidelines**: Provide basic guidelines for logo usage, including color variations and spacing.
+            1. Company Vision: Explain the long-term vision of the company and its mission to revolutionize the tech industry.
+            2. Mission Statement: A short, impactful mission statement that captures the essence of the company.
+            3. Brand Colors: Suggest 3 primary brand colors that reflect professionalism, innovation, and security.
+            4. Typography: Recommend 2 fonts (one for headers and one for body text) that align with the brand's modern and minimalist aesthetic.
+            5. Messaging Tone and Voice: Describe the tone and voice of the company's messaging (e.g., authoritative, friendly, approachable).
+            6. Logo Guidelines: Provide basic guidelines for logo usage, including color variations and spacing.
             
             Format the document in a clear, professional manner.
             """
@@ -216,21 +248,31 @@ class Marketer(BaseAgent):
                 max_tokens=500,
                 temperature=0.8
             )
-            
+
+            print("Cohere response received.")
             # Extract the generated document from the response
             branding_document = response.generations[0].text.strip()
-            
-            print(f"Generated branding document: {branding_document}")
 
-            # Send the branding document as a text message to Slack
-            self.send_text_to_slack(branding_document)
+            # Check if the branding document is valid
+            if not branding_document:
+                raise ValueError("Cohere API did not return a valid branding document.")
 
-            action = f"{self.name} created a branding document."
+            print(f"Generated Branding Document: {branding_document[:100]}...")  # Print a preview of the document
+
+            # Step 2: Format the branding document dynamically
+            formatted_document = self.format_branding_document(branding_document)
+
+            # Step 3: Send the formatted branding document to Slack
+            self.send_text_to_slack(formatted_document)
+
+            print("Formatted branding document sent to Slack successfully.")
+            action = f"{self.name} created and shared a formatted branding document."
             return action
+
         except Exception as e:
             print(f"An error occurred while generating the branding document: {e}")
             return "Failed to create a branding document."
-
+    
     def send_text_to_slack(self, text):
         """Sends a text message to a Slack channel."""
         try:
@@ -242,16 +284,49 @@ class Marketer(BaseAgent):
         except SlackApiError as e:
             print(f"Slack API error: {e.response['error']}")
 
-    def send_image_link_to_slack(self, image_url, prompt):
-        """Sends the generated image link along with a message to a Slack channel."""
+    def send_image_link_to_slack(self, message):
+        """Sends the generated message along with the image link to a Slack channel."""
         try:
             response = self.slack_client.chat_postMessage(
-                channel="C07N3SLH5EU",  # Replace with your Slack channel ID or name
-                text=f"Here is the logo generated from the prompt: {prompt}\n{image_url}"
+                channel="C07N3SLH5EU",  # Replace with your Slack channel ID
+                text=message
             )
-            print("Image URL sent to Slack successfully!")
+            print("Cohere-generated message with image URL sent to Slack successfully!")
         except SlackApiError as e:
             print(f"Slack API error: {e.response['error']}")
+    
+    def format_branding_document(self, branding_document):
+        """
+        Formats the branding document text dynamically by applying bullet points and basic formatting
+        to specific sections like 'Company Vision', 'Mission Statement', 'Brand Colors', etc.
+        """
+        # Example of dynamically splitting and formatting the document
+        sections = branding_document.split("\n")
+
+        formatted_document = "*Here is the latest branding document:*\n\n"
+
+        for section in sections:
+            if "Company Vision" in section:
+                formatted_document += "*1. Company Vision*\n"
+            elif "Mission Statement" in section:
+                formatted_document += "*2. Mission Statement*\n"
+            elif "Brand Colors" in section:
+                formatted_document += "*3. Brand Colors*\n"
+            elif "Typography" in section:
+                formatted_document += "*4. Typography*\n"
+            elif "Messaging Tone and Voice" in section:
+                formatted_document += "*5. Messaging Tone and Voice*\n"
+            elif "Logo Guidelines" in section:
+                formatted_document += "*6. Logo Guidelines*\n"
+            else:
+                # Default case: Add bullets for content under each section
+                cleaned_section = section.strip()
+                if cleaned_section:  # Check if the section contains any text
+                    formatted_document += f"• {cleaned_section}\n"
+
+        formatted_document += "\n*Happy to take any suggestions!* :page_facing_up:"
+        
+        return formatted_document
 
     def execute_task(self, instruction):
         return self.take_instruction(instruction)
