@@ -435,5 +435,5 @@ class CTOAgent(BaseAgent):
                 Now, respond as the CTO with sound technical knowledge, guiding the team with clarity and experience. Focus on solutions, but keep it conversational.
                 """
         response = self.process_instruction_with_llm(prompt)
-        return self.summarize(response)
+        self.send_message_to_slack(f"{self.summarize(response)}", "C07M9C6G0LW")
 
