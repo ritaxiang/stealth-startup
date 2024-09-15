@@ -150,6 +150,10 @@ class Marketer(BaseAgent):
 
         # Get Replicate API token from environment variables
         self.replicate_api_token = flux_token
+        self.metadata = {
+            "branding_documents": [],  # Store branding documents
+            "logos": []  # Store logo URLs and related metadata
+        }
 
     def take_instruction(self, instruction):
         """Processes the instruction for branding, logo creation, or design work."""
@@ -215,6 +219,12 @@ class Marketer(BaseAgent):
             # Send the Cohere-generated message with the image link to Slack
             self.send_image_link_to_slack(message)
 
+            self.metadata["logos"].append({
+                "url": image_url,
+                "description": generated_message,
+                "prompt": logo_prompt  # Storing the prompt for future context
+            })
+
             action = f"{self.name} shared a draft logo: {image_url}"
             return action
         except Exception as e:
@@ -264,6 +274,16 @@ class Marketer(BaseAgent):
 
             # Step 3: Send the formatted branding document to Slack
             self.send_text_to_slack(formatted_document)
+
+            # Store the branding document in metadata
+            self.metadata["branding_documents"].append({
+                "content": branding_document,
+                "formatted": formatted_document,
+                "prompt": prompt
+            })
+
+            print("Branding document stored in metadata and sent to Slack successfully.")
+            action = f"{self.name} created and shared a formatted branding document."
 
             print("Formatted branding document sent to Slack successfully.")
             action = f"{self.name} created and shared a formatted branding document."
