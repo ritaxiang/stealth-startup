@@ -38,7 +38,7 @@ dictator = Dictator(name="Dictator", cohere_api_key=cohere_api_key, employees=em
 # CEO executes a task (e.g., setting up company goals)
 #ceo_agent.take_instruction("the AI-driven healthcare market")
 
-channel_id = "C07M9C6G0LW"  # Replace with your actual Slack channel ID
+channel_id = "C07MF3WH7UJ"  # Replace with your actual Slack channel ID
 messages = []
 
 while True:

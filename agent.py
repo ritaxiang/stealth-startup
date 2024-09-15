@@ -143,7 +143,7 @@ class CEO(BaseAgent):
     def generate_message(self, prompt):
         response = self.process_instruction_with_llm(prompt)
         self.store_in_memory("Generate Response", response)
-        self.send_message_to_slack(f"{trim_quotations(response)}", "C07M9C6G0LW")
+        self.send_message_to_slack(f"{trim_quotations(response)}", "C07MF3WH7UJ")
 
 
 class Marketer(BaseAgent):
@@ -432,8 +432,8 @@ class CTOAgent(BaseAgent):
 
                 The message you're responding to: {text}
 
-                Now, respond as the CTO with sound technical knowledge, guiding the team with clarity and experience. Focus on solutions, but keep it conversational.
+                Now, respond as the CTO with sound technical knowledge. Assign another employee a task directly. Make the task specific. Focus on solutions, but keep it conversational.
                 """
         response = self.process_instruction_with_llm(prompt)
-        self.send_message_to_slack(f"{self.summarize(response)}", "C07M9C6G0LW")
+        self.send_message_to_slack(f"{self.summarize(response)}", "C07MF3WH7UJ")
 
