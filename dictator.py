@@ -115,7 +115,7 @@ class Dictator:
         for employee in self.employees.values():
             prompt += f"\n- ID: {employee.id}"
         
-        prompt += f"\n\Regarding this event {self.events[math.floor(self.current_event)]}, give a specific topic that was not used before for continuation of the conversation to discuss and store it in \"value\". Give a \"progress\" of 1 to end the conversation. Otherwise, give a 0 to continue this conversation."
+        prompt += f"\n\Regarding this event {self.events[min(math.floor(self.current_event), 2)]}, give a specific topic that was not used before for continuation of the conversation to discuss and store it in \"value\". Give a \"progress\" of 1 to end the conversation. Otherwise, give a 0 to continue this conversation."
         return prompt
 
     def get_employee_name(self, employee_id):
