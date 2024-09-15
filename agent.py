@@ -1,6 +1,6 @@
 import os
-import openai
 import cohere
+import replicate
 import requests  # For downloading the image
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
@@ -11,7 +11,7 @@ from swe_agent import SWEAgent
 from abc import ABC, abstractmethod
 
 class BaseAgent(ABC):
-    def __init__(self, name, id, role, cohere_api_key, slack_token):
+    def __init__(self, name, id, role, cohere_api_key, slack_token, flux_token=None):
         self.name = name  # Agent's name, e.g., "Alice"
         self.id = id
         self.role = role  # Agent's role, e.g., "CTO"
@@ -141,12 +141,12 @@ class CEO(BaseAgent):
 
 
 class Marketer(BaseAgent):
-    def __init__(self, name, id, role, cohere_api_key, slack_token, openai_api_key):
-        super().__init__(name, id, role, cohere_api_key, slack_token)
-        self.openai_api_key = openai_api_key
-        openai.api_key = self.openai_api_key
+    def __init__(self, name, id, role, cohere_api_key, slack_token, flux_token):
+        super().__init__(name, id, role, cohere_api_key, slack_token, flux_token)
         self.slack_client = WebClient(token=slack_token)
-        # self.cohere_client = cohere.Client(self.cohere_api_key)
+
+        # Get Replicate API token from environment variables
+        self.replicate_api_token = flux_token
 
     def take_instruction(self, instruction):
         """Processes the instruction for branding, logo creation, or design work."""
@@ -161,33 +161,34 @@ class Marketer(BaseAgent):
 
         self.store_in_memory(instruction, action)
         return action
-    
+
     def create_logo(self, prompt):
-        """Generates a logo using OpenAI's DALL·E."""
-        print(f"{self.name} is generating a logo with DALL·E...")
+        """Generates a logo using Replicate API and sends it to Slack."""
+        print(f"{self.name} is generating a logo with Replicate...")
 
         try:
-            # Call the OpenAI API to generate an image
-            response = openai.Image.create(
-                prompt=prompt,
-                n=1,
-                size="512x512"
-            )
-            image_url = response["data"][0]["url"]
-            print(f"Generated logo: {image_url}")
+            # Set up the input for the Replicate API
+            input = {
+                "prompt": prompt,
+                "guidance": 3.5  # Customize guidance if needed
+            }
 
-            # Send the logo URL to Slack instead of uploading the file
+            # Call Replicate API to generate the image
+            output = replicate.run(
+                "black-forest-labs/flux-dev",
+                input=input
+            )
+            image_url = output[0]  # The first image URL generated
+
+            # Send the image URL to Slack instead of uploading the file
             self.send_image_link_to_slack(image_url, prompt)
 
             action = f"{self.name} created a new logo: {image_url}"
             return action
-        except OpenAIError as e:
-            print(f"OpenAI API error: {e}")
-            return "Failed to create a logo."
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
             return "Failed to create a logo."
-    
+
     def create_branding_document(self):
         """Generates a branding document using Cohere and sends it to Slack."""
         print(f"{self.name} is generating a branding document using Cohere...")
@@ -210,7 +211,7 @@ class Marketer(BaseAgent):
 
             # Call the Cohere API to generate the branding document text
             response = self.cohere_client.generate(
-                model='command-xlarge-nightly',  # You can choose a model as per your needs
+                model='command-xlarge-nightly',
                 prompt=prompt,
                 max_tokens=500,
                 temperature=0.8
@@ -240,7 +241,7 @@ class Marketer(BaseAgent):
             print("Branding document sent to Slack successfully!")
         except SlackApiError as e:
             print(f"Slack API error: {e.response['error']}")
-    
+
     def send_image_link_to_slack(self, image_url, prompt):
         """Sends the generated image link along with a message to a Slack channel."""
         try:
@@ -248,7 +249,7 @@ class Marketer(BaseAgent):
                 channel="C07N3SLH5EU",  # Replace with your Slack channel ID or name
                 text=f"Here is the logo generated from the prompt: {prompt}\n{image_url}"
             )
-            #print("Message sent to Slack successfully!")
+            print("Image URL sent to Slack successfully!")
         except SlackApiError as e:
             print(f"Slack API error: {e.response['error']}")
 
