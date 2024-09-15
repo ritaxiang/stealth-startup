@@ -3,11 +3,14 @@ import subprocess
 import re
 import json
 from groq import Groq
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class SWEAgent:
     def __init__(self, project_path):
         self.project_path = project_path
-        self.groq = Groq(api_key="groq api key")
+        self.groq = Groq(api_key=os.getenv("GROQ_API_KEY"))
         self.project_map = {}
 
     def map_directory(self):

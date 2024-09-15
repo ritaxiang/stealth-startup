@@ -73,6 +73,10 @@ class BaseAgent(ABC):
         response = self.process_instruction_with_llm(f"{prompt}: {text}")
         return response 
 
+    @abstractmethod
+    def generate_message(self, prompt):
+        pass
+
 
 class CEO(BaseAgent):
     def __init__(self, name, id, cohere_api_key, slack_token):
@@ -349,6 +353,10 @@ class Marketer(BaseAgent):
 
     def execute_task(self, instruction):
         return self.take_instruction(instruction)
+    
+    def generate_message(self, text):
+        # potentially change
+        return self.take_instruction(text)
 
 
 
@@ -407,8 +415,25 @@ class CTOAgent(BaseAgent):
         else:
             print(f"{ceo_agent.name} has no stored memory or messages.")
 
-    def summarize_instruction(self, text):
-        """Summarize the instruction for Slack output (using LLM)."""
-        summarized = self.summarize(text)
-        print(f"Summarized Instruction: {summarized}")
-        return summarized
+    def generate_message(self, text) -> str:
+        """General endpoint to have a conversation with the CTO agent."""
+        prompt=f"""
+                As the CTO of a fast-growing tech startup, you're known for your deep technical expertise and ability to simplify complex subjects. You’ve been brought into a Slack discussion where various technical challenges are being debated. Read the following message carefully and respond with sound technical advice, thoughtful insights, and clear action points. Your tone should be confident but approachable, demonstrating strong leadership while maintaining open communication with your team.
+
+                Avoid using markdown formatting. Instead, focus on explaining key technical ideas in a structured, logical manner. Use precise language that non-technical and technical members alike can understand. Be sure to provide actionable next steps or solutions to address the technical issues discussed.
+
+                Example topics that might arise:
+                - Architecture design decisions (e.g., microservices vs monolithic architecture)
+                - Cloud infrastructure choices (e.g., AWS, Azure, GCP)
+                - Software scalability challenges
+                - DevOps pipelines and automation best practices
+                - Implementing security protocols
+                - Talking about the codebase and best practices
+
+                The message you're responding to: {text}
+
+                Now, respond as the CTO with sound technical knowledge, guiding the team with clarity and experience. Focus on solutions, but keep it conversational.
+                """
+        response = self.process_instruction_with_llm(prompt)
+        return self.summarize(response)
+
