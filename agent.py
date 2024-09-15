@@ -45,12 +45,13 @@ class BaseAgent(ABC):
     
     def process_instruction_with_llm(self, instruction: str) -> str:
         """Uses the Cohere LLM client to process the instruction."""
-        prompt = f"As the {self.role} of a tech startup company, {instruction}" # TODO: have some way to expand on the company once the idea is fleshed out
+        prompt = f"{instruction}" # TODO: have some way to expand on the company once the idea is fleshed out
         #print("\n\n\n")
         #print(prompt)
         #print("\n\n\n")
 
         response = self.cohere_client.generate(
+            model="command-r-08-2024",
             prompt=prompt,
             max_tokens=150
         )
