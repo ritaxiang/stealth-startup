@@ -2,7 +2,7 @@ import os
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from dotenv import load_dotenv
-from agent import CEO
+from agent import CEO, CTOAgent
 from dictator import Dictator
 import time
 
@@ -15,6 +15,8 @@ load_dotenv()
 cohere_api_key = os.getenv("COHERE_API_KEY")
 slack_token = os.getenv("IAN_K_SLACK_BOT_TOKEN")
 cto_slack_token = os.getenv("ELIJAH_K_SLACK_BOT_TOKEN")
+repo_path = "../stealth-startup-dev"  # Path to the external repo
+PAT = os.getenv("GITHUB_PAT")
 ceo_slack_id = "U07M0K20NB1"
 cto_slack_id = "U07MUQUCU6M"
 client = WebClient(token=slack_token)
@@ -22,7 +24,7 @@ client = WebClient(token=slack_token)
 
 # Initialize agents
 ceo_agent = CEO(name="Ian Korovinsky", id=ceo_slack_id, cohere_api_key=cohere_api_key, slack_token=slack_token)
-cto_agent = CEO(name="Elijah Kurien", id=cto_slack_id, cohere_api_key=cohere_api_key, slack_token=cto_slack_token)
+cto_agent = CTOAgent(name="Elijah Kurien", id=cto_slack_id, cohere_api_key=cohere_api_key, slack_token=cto_slack_token, github_repo_path=repo_path, github_token=PAT)
 
 employees = {
     ceo_agent.id: ceo_agent,
