@@ -167,10 +167,26 @@ class Marketer(BaseAgent):
         elif "branding" in instruction.lower():
             action = self.create_branding_document()
         else:
+            self.generic_message(instruction)
             action = f"{self.name} processed the instruction: {response}"
 
         self.store_in_memory(instruction, action)
         return action
+
+    def generic_message(self, text) -> str:
+        """General endpoint to have a conversation with the marketing agent."""
+        prompt=f"""
+                As the marketing lead of a fast-growing tech startup, you're known for your artistic eye. You’ve been brought into a Slack discussion where various artistic challenges are being debated. Read the following message carefully and respond with sound technical advice, thoughtful insights, and clear action points. Your tone should be confident but approachable, demonstrating strong leadership while maintaining open communication with your team.
+
+                Avoid using markdown formatting. Instead, focus on explaining key artistic ideas in a structured, logical manner. Be sure to provide actionable next steps or solutions to address the technical issues discussed.
+                The message you're responding to: {text}
+
+                Now, respond as the marketing with creative flair. Provide creative thoughts and discuss further iterations. Focus on solutions, but keep it conversational. This is a serious matter. Focus on the task at hand.
+                """
+        response = self.process_instruction_with_llm(prompt)
+        self.send_message_to_slack(f"{response}", "C07MF3WH7UJ")
+
+
 
     def create_logo(self):
         """Generates a logo using Replicate API and generates a human-like reply using Cohere, then sends it to Slack."""
@@ -300,7 +316,7 @@ class Marketer(BaseAgent):
         """Sends a text message to a Slack channel."""
         try:
             response = self.slack_client.chat_postMessage(
-                channel="C07N3SLH5EU",  # Replace with your Slack channel ID
+                channel="C07MF3WH7UJ",  # Replace with your Slack channel ID
                 text=text
             )
             print("Branding document sent to Slack successfully!")
@@ -311,7 +327,7 @@ class Marketer(BaseAgent):
         """Sends the generated message along with the image link to a Slack channel."""
         try:
             response = self.slack_client.chat_postMessage(
-                channel="C07N3SLH5EU",  # Replace with your Slack channel ID
+                channel="C07MF3WH7UJ",  # Replace with your Slack channel ID
                 text=message
             )
             print("Cohere-generated message with image URL sent to Slack successfully!")
@@ -432,7 +448,7 @@ class CTOAgent(BaseAgent):
 
                 The message you're responding to: {text}
 
-                Now, respond as the CTO with sound technical knowledge. Assign another employee a task directly. Make the task specific. Focus on solutions, but keep it conversational.
+                Now, respond as the CTO with sound technical knowledge. Assign another employee a task directly. Make the task specific. Focus on solutions, but keep it conversational. Be extremely serious.
                 """
         response = self.process_instruction_with_llm(prompt)
         self.send_message_to_slack(f"{self.summarize(response)}", "C07MF3WH7UJ")

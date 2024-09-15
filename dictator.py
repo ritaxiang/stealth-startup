@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from agent import CEO
 import json
 import math
+import random
 
 """ 
 load_dotenv()
@@ -70,7 +71,9 @@ class Dictator:
         )
         
         response_json = json.loads(response.text)
+        print("\n\n\n\n")
         print(response_json)
+        print("\n\n\n\n")
     
         # Access the "employees" key to retrieve the list of objects
         employees = response_json.get("employees", [])
@@ -78,7 +81,6 @@ class Dictator:
         topic = response_json.get("value", "")
         self.current_event += 0.2
 
-        
         # Now you can iterate over the employees and handle the data
         #print(self.employees)
        # print(self.employees['U07M0K20NB1'].id)
@@ -87,6 +89,7 @@ class Dictator:
             response_type = employee.get("response_type")
             #print(f"Employee ID: {employee_id}, Response Type: {response_type}")
             # Process the employee's information
+            print(f"CURRENTLY AT {self.get_employee_name(employee_id)}")
             if employee_id in self.employees and employee_id != messages[0]['user']:
                 prompt = f"""You are {self.get_employee_name(employee_id)}, the {self.employees[employee_id].role} of Echo. Echo is a 911 dispatching service that uses AI to help manage emergency calls. You are responding to a message from a team member. You are a technical person with management of the codebase. Your current goal is to do Market Research and evaluate (1) Customers (2) Industry and (3) Market insights and the conversation should NOT stray away from this topic. If it does, take initiative to come back to it until it is complete."""
                 
@@ -112,7 +115,10 @@ class Dictator:
             prompt += f"\n{self.get_employee_name(message['user'])}: \"{message['text']}\"\n"
 
         prompt += "Determine the IDs of the to 3 employees in order that they should respond and the response they should provide (tool or message). Ensure they are in the right JSON format. Pick from the following employees:"
-        for employee in self.employees.values():
+        employees_list = list(self.employees.values())
+        random.shuffle(employees_list)
+        print(employees_list)
+        for employee in employees_list:
             prompt += f"\n- ID: {employee.id}"
         
         prompt += f"\n\Regarding this event {self.events[min(math.floor(self.current_event), 2)]}, give a specific topic that was not used before for continuation of the conversation to discuss and store it in \"value\". Give a \"progress\" of 1 to end the conversation. Otherwise, give a 0 to continue this conversation."
@@ -125,19 +131,3 @@ class Dictator:
             return self.employees[employee_id].name
         else:
             return employee_id
-
-if __name__ == "__main__":
-    channel_id = "C07N3SLH5EU"  # Replace with your actual Slack channel ID
-    messages = []
-    try:
-        response = client.conversations_history(channel=channel_id, limit=10)
-        messages = response['messages']
-    except SlackApiError as e:
-        print(f"Error retrieving messages: {e.response['error']}")
-        messages = []
-
-    employee_map = {
-        'U07M0K20NB1': ceo_agent,
-    }
-    Dictator("Dictator", cohere_api_key, employee_map).process_message(messages)
-
